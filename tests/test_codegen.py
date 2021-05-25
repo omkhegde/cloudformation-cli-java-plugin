@@ -1,6 +1,8 @@
 # fixture and parameter have the same name
 # pylint: disable=redefined-outer-name,protected-access
 import xml.etree.ElementTree as ET
+from pathlib import Path
+from shutil import copyfile
 from unittest.mock import MagicMock, Mock, patch
 
 import yaml
@@ -86,9 +88,76 @@ def test_generate(project):
 
     project.generate()
 
+    # assert TypeConfigurationModel is added to generated directory
+    type_configuration_model_file = (
+        generated_root
+        / "software"
+        / "amazon"
+        / "foo"
+        / RESOURCE.lower()
+        / "TypeConfigurationModel.java"
+    )
+    assert type_configuration_model_file.is_file()
+
     # asserts we remove existing files in the tree
     assert not src_file.is_file()
     assert not test_file.is_file()
+
+
+def test_generate_with_type_configuration(project, tmpdir):
+    copyfile(
+        str(Path.cwd() / "tests/data/schema-with-typeconfiguration.json"),
+        str(tmpdir / "schema-with-typeconfiguration.json"),
+    )
+    project.type_info = ("schema", "with", "typeconfiguration")
+    project.load_schema()
+    project.load_configuration_schema()
+    project.generate()
+    generated_root = project._plugin._get_generated_root(project)
+
+    # assert TypeConfigurationModel is added to generated directory
+    type_configuration_model_file = (
+        generated_root
+        / "software"
+        / "amazon"
+        / "foo"
+        / RESOURCE.lower()
+        / "TypeConfigurationModel.java"
+    )
+    type_configuration_schema_file = (
+        generated_root / "schema-with-typeconfiguration-configuration.json"
+    )
+
+    assert type_configuration_model_file.is_file()
+    assert type_configuration_schema_file.is_file()
+
+
+def test_generate_with_out_type_configuration(project, tmpdir):
+    copyfile(
+        str(Path.cwd() / "tests/data/schema-without-typeconfiguration.json"),
+        str(tmpdir / "schema-without-typeconfiguration.json"),
+    )
+    project.type_info = ("schema", "without", "typeconfiguration")
+    project.load_schema()
+    project.load_configuration_schema()
+    project.generate()
+    generated_root = project._plugin._get_generated_root(project)
+
+    # assert TypeConfigurationModel is added to generated directory
+    type_configuration_model_file = (
+        generated_root
+        / "software"
+        / "amazon"
+        / "foo"
+        / RESOURCE.lower()
+        / "TypeConfigurationModel.java"
+    )
+    type_configuration_schema_file = (
+        generated_root / "schema-without-typeconfiguration-configuration.json"
+    )
+
+    assert type_configuration_model_file.is_file()
+    assert not type_configuration_schema_file.is_file()
 
 
 def test_protocol_version_is_set(project):
@@ -177,9 +246,9 @@ def test_generate_without_java_plugin_in_pom_should_not_fail(project):
 
 
 def test__get_plugin_version_invalid_pom(project):
-    pom = open(project.root / "pom.xml", "w")
-    pom.write("invalid pom")
-    pom.close()
+    with open(project.root / "pom.xml", "w") as pom:
+        pom.write("invalid pom")
+        pom.close()
     with pytest.raises(InvalidMavenPOMError):
         project._plugin._get_java_plugin_dependency_version(project)
 

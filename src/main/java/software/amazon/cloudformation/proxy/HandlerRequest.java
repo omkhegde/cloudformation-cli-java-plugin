@@ -14,6 +14,7 @@
 */
 package software.amazon.cloudformation.proxy;
 
+import java.util.Map;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import software.amazon.cloudformation.Action;
@@ -23,7 +24,7 @@ import software.amazon.cloudformation.Action;
  */
 @Data
 @NoArgsConstructor
-public class HandlerRequest<ResourceT, CallbackT> {
+public class HandlerRequest<ResourceT, CallbackT, ConfigurationT> {
     private Action action;
     private String awsAccountId;
     private String bearerToken;
@@ -31,11 +32,12 @@ public class HandlerRequest<ResourceT, CallbackT> {
     private String region;
     private String resourceType;
     private String resourceTypeVersion;
-    private RequestData<ResourceT> requestData;
+    private RequestData<ResourceT, ConfigurationT> requestData;
     private String stackId;
     private CallbackT callbackContext;
     private Boolean snapshotRequested;
     private Boolean rollback;
     private Boolean driftable;
+    private Map<String, Object> features;
     private RequestContext<CallbackT> requestContext;
 }
